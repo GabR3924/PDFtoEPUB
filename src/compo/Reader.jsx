@@ -1,24 +1,47 @@
 import React, { useState } from 'react';
-// import pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
-import JSZip from 'jszip';
+import axios from 'axios'
 
 function Reader() {
    
-    const [pdfUrl, setPdfUrl] = useState(null);
+    const [file, setFile] = useState(null);
+    const [converting, setConverting] = useState(false);
+
+    async function convertToEpub(pdfFile) {
+        setConverting(true);
+
+        const formData = new FormData();
+        formData.append('pdf', pdfFile);
+
+        try {
+            const response = await axios.post('URL_DEL_SERVIDOR/convert', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            // Suponiendo que el servidor devuelve el ePub como un blob en la respuesta
+            const epubBlob = new Blob([response.data], { type: 'application/epub+zip' });
+            const epubUrl = URL.createObjectURL(epubBlob);
+            window.open(epubUrl);
+        } catch (error) {
+            console.error('Error al convertir el PDF a ePub:', error);
+        }
+
+        setConverting(false);
+    }
 
     function handleFileSelect(event) {
         const selectedFile = event.target.files[0];
         if (selectedFile) {
-            const pdfUrl = URL.createObjectURL(selectedFile);
-            setPdfUrl(pdfUrl);
+            setFile(selectedFile);
+            convertToEpub(selectedFile);
         }
     }
 
     return (
         <div>
-            <h1>hola</h1>
             <input type="file" accept=".pdf" onChange={handleFileSelect} />
-            {pdfUrl && <iframe src={pdfUrl} width="100%" height="600px" />}
+            {converting && <p>Converting...</p>}
         </div>
     );
 }
